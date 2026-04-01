@@ -1,3 +1,7 @@
 bot/.env
 webhook-server/.env
 web/.env
+
+
+webhook-server/.venv
+webhook-server/__pycache__
