@@ -19,11 +19,15 @@ Create a `.env` file in this directory (see variables below). It is gitignored.
 
 ## Environment
 
-| Variable    | Description        | Default |
-|------------|--------------------|---------|
-| `LOG_LEVEL` | Logging level name | `INFO`  |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LOG_LEVEL` | Logging level name | `INFO` |
+| `DEFAULT_PHONE_NUMBER` | Default number used when naming the three Daily room pools (digits/safe chars) | — |
+| `DAILY_API_KEY` | [Daily](https://www.daily.co/) REST API key; if unset, rooms are not created | — |
 
-Add other variables here as you wire Supabase, secrets, and URLs.
+On startup the app loads `DEFAULT_PHONE_NUMBER` and creates **three** Daily rooms named `va-<suffix>-pool-1` … `pool-3` (suffix from the phone). Existing rooms with the same name are reused.
+
+Add other variables here as you wire Supabase and URLs.
 
 ## Run
 

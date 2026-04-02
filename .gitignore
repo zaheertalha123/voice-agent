@@ -5,3 +5,5 @@ web/.env
 
 webhook-server/.venv
 webhook-server/__pycache__
+webhook-server/services/__pycache__
+webhook-server/schemas/__pycache__
