@@ -11,6 +11,16 @@ _client_cache: Optional[Client] = None
 _initialized = False
 
 
+def _normalize_env_value(raw: str | None) -> str:
+    """Strip whitespace; remove one pair of surrounding quotes (Docker ``--env-file`` often keeps them)."""
+    if not raw:
+        return ""
+    s = raw.strip().replace("\r", "").replace("\n", "")
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
+        s = s[1:-1]
+    return s.strip()
+
+
 def get_supabase_client() -> Optional[Client]:
     """Get or create a cached Supabase client from environment variables."""
     global _client_cache, _initialized
@@ -20,8 +30,8 @@ def get_supabase_client() -> Optional[Client]:
 
     _initialized = True
 
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    url = _normalize_env_value(os.getenv("SUPABASE_URL"))
+    key = _normalize_env_value(os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
     if not url or not key:
         logger.warning(
