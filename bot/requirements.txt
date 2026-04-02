@@ -1,0 +1,12 @@
+pipecat-ai[daily,silero,deepgram,cartesia,azure,google,local-smart-turn-v3,soundfile]==0.0.104
+fastapi
+uvicorn[standard]
+aiohttp
+python-dotenv
+loguru
+onnxruntime
+pydantic
+google-api-python-client
+google-auth
+supabase
+pyngrok==7.0.0

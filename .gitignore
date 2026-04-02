@@ -7,3 +7,8 @@ webhook-server/.venv
 webhook-server/__pycache__
 webhook-server/services/__pycache__
 webhook-server/schemas/__pycache__
+bot/.venv
+bot/__pycache__
+bot/services/__pycache__
+bot/handlers/__pycache__
+bot/processors/__pycache__
