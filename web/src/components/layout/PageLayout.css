@@ -1,0 +1,179 @@
+/* Shared app page structure — works inside main-content next to sidebar */
+
+.page-shell {
+  min-height: min-content;
+  width: 100%;
+  padding: 1.5rem clamp(0.75rem, 2.5vw, 2rem) 2.5rem;
+  box-sizing: border-box;
+}
+
+.page-shell__inner {
+  max-width: 56rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.page-shell--wide .page-shell__inner {
+  max-width: 87.5rem;
+}
+
+.page-shell--narrow .page-shell__inner {
+  max-width: 28rem;
+}
+
+.page-shell__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.page-shell__header-main {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.page-shell__header-text {
+  min-width: 0;
+}
+
+.page-shell__icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, rgba(180, 83, 9, 0.35), rgba(88, 28, 135, 0.25));
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.45);
+}
+
+.page-shell__icon svg {
+  display: block;
+}
+
+.page-shell__eyebrow {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(251, 191, 36, 0.95);
+  margin-bottom: 0.35rem;
+}
+
+.page-shell__title {
+  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, #fffbeb 0%, #fbbf24 38%, #d8b4fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.4rem;
+  line-height: 1.2;
+}
+
+.page-shell__subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(203, 213, 225, 0.85);
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.page-shell__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-shell__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* Secondary panels inside a page */
+.page-section {
+  background: rgba(8, 7, 11, 0.72);
+  border: 1px solid rgba(245, 158, 11, 0.14);
+  border-radius: 1rem;
+  padding: 1.2rem 1.3rem 1.35rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 32px rgba(0, 0, 0, 0.22);
+}
+
+.page-section--flush {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.page-section--flush .page-section__head {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0.65rem;
+}
+
+.page-section:not(.page-section--flush) .page-section__head {
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.page-section__head--row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.page-section__head-text {
+  min-width: 0;
+}
+
+.page-section__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.page-section__sub {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.95);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.page-section__body {
+  min-width: 0;
+}
+
+.page-section__meta {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.95);
+  white-space: nowrap;
+  padding-top: 0.15rem;
+}
+
+.page-section--flush .page-section__body {
+  padding: 0;
+}

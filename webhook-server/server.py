@@ -146,21 +146,48 @@ async def get_pool_stats(request: Request) -> JSONResponse:
 
 @app.post("/validate-secret")
 async def validate_secret(request: Request) -> JSONResponse:
+    """Validate admin setup secret.
+
+    Expects JSON body: ``{"secret": "the-secret-to-validate"}``.
+
+    Returns:
+        JSONResponse: ``{"valid": true|false}`` (and optional ``error``).
+    """
     try:
         data = await request.json()
-        secret = data.get("secret", "")
-
-        if not secret:
+        if not isinstance(data, dict):
+            logger.warning("validate_secret: JSON body must be an object, got %s", type(data).__name__)
             return JSONResponse(
-                {"valid": False, "error": "No secret provided"}, status_code=400
+                {"valid": False, "error": "Invalid JSON body"},
+                status_code=400,
             )
+
+        raw_secret = data.get("secret", "")
+        # JSON null yields None; missing key uses ""
+        if raw_secret is None:
+            logger.info("validate_secret: secret is null")
+            return JSONResponse(
+                {"valid": False, "error": "No secret provided"},
+                status_code=400,
+            )
+        if isinstance(raw_secret, str) and not raw_secret.strip():
+            logger.info("validate_secret: empty secret string")
+            return JSONResponse(
+                {"valid": False, "error": "No secret provided"},
+                status_code=400,
+            )
+
+        secret = raw_secret
 
         is_valid = validate_setup_secret(secret)
         return JSONResponse({"valid": is_valid})
 
     except Exception as e:
-        logger.error(f"Error validating secret: {e}")
-        return JSONResponse({"valid": False, "error": "Validation failed"}, status_code=500)
+        logger.exception("validate_secret: unexpected error: {}", e)
+        return JSONResponse(
+            {"valid": False, "error": "Validation failed"},
+            status_code=500,
+        )
 
 
 @app.post("/return-room")
