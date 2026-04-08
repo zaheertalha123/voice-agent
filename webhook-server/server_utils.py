@@ -1,5 +1,7 @@
 """Webhook helpers (dial-out parsing, Daily room, bot stub)."""
 
+import os
+
 import aiohttp
 from fastapi import HTTPException, Request
 from loguru import logger
@@ -51,10 +53,49 @@ async def return_room_to_pool(room: dict | DailyRoomConfig) -> None:
 
 
 async def start_bot(agent_request: AgentRequest, session: aiohttp.ClientSession) -> None:
-    """Start the outbound bot process for this call.
+    """Start the bot via ``POST {BOT_URL}/start``.
 
-    Not implemented yet — this will call into the bot service when it exists.
+    The room is already created by the webhook server; the bot joins with the
+    payload under ``body``.
+
+    Args:
+        agent_request: Agent configuration with ``room_url``, ``token``, dial-out
+            settings, and call metadata.
+        session: Shared aiohttp session for outbound HTTP.
+
+    Environment:
+        ``BOT_URL`` or ``LOCAL_BOT_URL``: Base URL of the bot service (no trailing
+            slash). Defaults to ``http://localhost:7860``.
+
+    Raises:
+        HTTPException: If the bot service returns a non-200 response.
     """
-    _ = agent_request
-    _ = session
-    return
+    bot_base = (
+        os.getenv("BOT_URL")
+        or os.getenv("LOCAL_BOT_URL")
+        or os.getenv("VITE_BOT_URL")
+        or "http://localhost:7860"
+    ).rstrip("/")
+
+    logger.debug(
+        f"Starting bot via POST {bot_base}/start for call_id={agent_request.call_id!r}"
+    )
+
+    body_data = agent_request.model_dump(exclude_none=True, mode="json")
+
+    async with session.post(
+        f"{bot_base}/start",
+        headers={"Content-Type": "application/json"},
+        json={
+            "createDailyRoom": False,
+            "body": body_data,
+        },
+    ) as response:
+        if response.status != 200:
+            error_text = await response.text()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to start bot via /start endpoint: {error_text}",
+            )
+
+    logger.debug("Bot started successfully via /start endpoint")

@@ -181,7 +181,7 @@ async def run_bot(
         language="en",
         params=CartesiaTTSService.InputParams(
             generation_config=GenerationConfig(
-                speed=1.1,
+                speed=1.0,
             ),
         ),
     )
@@ -592,7 +592,7 @@ async def run_bot(
             
             if not user_has_spoken:
                 logger.info("⚡ Human detected - greeting immediately")
-                await task.queue_frames([TTSSpeakFrame("Hi, this is Marin from E3 Trucking. How are you today?")])
+                await task.queue_frames([TTSSpeakFrame("Hi, this is Alice from Voice Bot. How are you today?")])
             else:
                 logger.info("✅ User already spoke - conversation flowing naturally")
         
