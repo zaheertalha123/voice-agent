@@ -181,7 +181,7 @@ async def run_bot(
         language="en",
         params=CartesiaTTSService.InputParams(
             generation_config=GenerationConfig(
-                speed=1.1,
+                speed=1.0,
             ),
         ),
     )
