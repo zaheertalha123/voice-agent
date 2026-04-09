@@ -139,12 +139,14 @@ function CallRecordsTableRow({ call }: { call: Call }) {
       </td>
       <td className="call-records__td call-records__td--audio">
         {call.recording_url ? (
-          <audio
-            className="call-records__audio"
-            controls
-            preload="metadata"
-            src={call.recording_url}
-          />
+          <div className="call-records__audio-shell">
+            <audio
+              className="call-records__audio"
+              controls
+              preload="metadata"
+              src={call.recording_url}
+            />
+          </div>
         ) : (
           <span className="call-records__muted">—</span>
         )}
@@ -193,7 +195,14 @@ function CallRecordsMobileCard({ call }: { call: Call }) {
       <div className="call-records__card-audio-block">
         <span className="call-records__card-label">Recording</span>
         {call.recording_url ? (
-          <audio className="call-records__audio call-records__audio--card" controls preload="metadata" src={call.recording_url} />
+          <div className="call-records__audio-shell call-records__audio-shell--card">
+            <audio
+              className="call-records__audio call-records__audio--card"
+              controls
+              preload="metadata"
+              src={call.recording_url}
+            />
+          </div>
         ) : (
           <span className="call-records__muted">—</span>
         )}
