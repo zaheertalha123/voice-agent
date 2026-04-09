@@ -547,9 +547,14 @@
   transition: all 0.2s ease;
 }
 
-.transcript-copy-btn:hover {
+.transcript-copy-btn:hover:not(:disabled) {
   background: rgba(245, 158, 11, 0.3);
   color: #fff;
+}
+
+.transcript-copy-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .transcript-modal-content {

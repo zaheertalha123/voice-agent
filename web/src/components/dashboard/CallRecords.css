@@ -1,0 +1,461 @@
+/* Call Records — full main area, inner scroll; table on wide / cards on narrow */
+
+/* Span full width of main-content (from sidebar edge to right edge) */
+.call-records.page-shell {
+  width: 100%;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 1.5rem;
+  padding-bottom: 2.5rem;
+  box-sizing: border-box;
+}
+
+/* Beat `.page-shell--wide .page-shell__inner { max-width: 87.5rem }` */
+.call-records.page-shell.page-shell--wide .page-shell__inner,
+.call-records.page-shell .page-shell__inner {
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.call-records .page-shell__header {
+  padding-left: clamp(1rem, 2.5vw, 2rem);
+  padding-right: clamp(1rem, 2.5vw, 2rem);
+  box-sizing: border-box;
+}
+
+.call-records .page-shell__content {
+  width: 100%;
+}
+
+.call-records .dashboard-loading {
+  padding-left: clamp(1rem, 2.5vw, 2rem);
+  padding-right: clamp(1rem, 2.5vw, 2rem);
+}
+
+.call-records__layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.call-records__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  padding-bottom: 0.35rem;
+  padding-left: clamp(1rem, 2.5vw, 2rem);
+  padding-right: clamp(1rem, 2.5vw, 2rem);
+  box-sizing: border-box;
+}
+
+.call-records__toolbar-sub {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.call-records__toolbar-meta {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.call-records__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.call-records__empty,
+.call-records__message {
+  padding: 1.25rem clamp(1rem, 2.5vw, 2rem);
+  color: rgba(203, 213, 225, 0.9);
+  box-sizing: border-box;
+}
+
+.call-records__message--error {
+  color: #fca5a5;
+}
+
+.call-records__desktop {
+  display: none;
+}
+
+.call-records__mobile {
+  display: block;
+}
+
+@media (min-width: 52rem) {
+  .call-records__desktop {
+    display: block;
+  }
+
+  .call-records__mobile {
+    display: none;
+  }
+}
+
+/* ——— Table (no outer panel — edge-to-edge within shell padding) ——— */
+.call-records__table-wrap {
+  overflow-x: auto;
+}
+
+.call-records__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.call-records__table thead {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.call-records__table th {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(10, 9, 14, 0.97);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.call-records__table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: middle;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.call-records__row:last-child td {
+  border-bottom: none;
+}
+
+.call-records__row:hover td {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.call-records__mono {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.call-records__phone-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.call-records__dir-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.call-records__dir-icon--inbound {
+  color: #60a5fa;
+}
+
+.call-records__dir-icon--outbound {
+  color: #c084fc;
+}
+
+.call-records__phone {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.call-records__muted {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.call-records__xfer {
+  margin-left: 0.35rem;
+}
+
+.call-records__td--datetime {
+  min-width: 11rem;
+}
+
+.call-records__td--status {
+  white-space: normal;
+}
+
+.call-records__td--audio {
+  min-width: min(22rem, 32vw);
+  max-width: 36rem;
+  width: 28%;
+}
+
+.call-records__audio {
+  display: block;
+  width: 100%;
+  min-width: 18rem;
+  max-width: 100%;
+  height: 2.75rem;
+  vertical-align: middle;
+}
+
+.call-records__td--cost {
+  position: relative;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.call-records__cost-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.call-records__cost-wrap--card {
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+}
+
+.call-records__cost-value {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.call-records__cost-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(148, 163, 184, 0.95);
+  cursor: help;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  line-height: 0;
+}
+
+.call-records__cost-trigger:hover,
+.call-records__cost-trigger:focus-visible {
+  color: #fbbf24;
+  outline: none;
+}
+
+.call-records__cost-trigger:focus-visible {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+}
+
+/* Portaled to document.body — position set in JS (fixed); avoids overflow clipping in scroll area */
+.call-records__cost-popover {
+  min-width: 12rem;
+  max-width: min(18rem, calc(100vw - 1rem));
+  padding: 0.55rem 0.7rem;
+  background: rgba(12, 10, 18, 0.98);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  font-size: 0.72rem;
+  pointer-events: auto;
+  max-height: min(50vh, 16rem);
+  overflow-y: auto;
+}
+
+.call-records__cost-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 0.15rem 0;
+}
+
+.call-records__cost-row span:first-child {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.call-records__cost-row span:last-child {
+  color: #4ade80;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-records__td--actions {
+  min-width: 10rem;
+  vertical-align: middle;
+}
+
+.call-records__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.call-records__action {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+  color: #fbbf24;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.call-records__action:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.call-records__action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Tools modal (shared classes; modal mounts in app root) */
+.call-tools-modal {
+  padding: 0.25rem 0;
+}
+
+.call-tools-modal-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.9rem;
+}
+
+.call-tools-modal-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.call-tools-modal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.call-tools-modal-name {
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.call-tools-modal-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fbbf24;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ——— Mobile cards ——— */
+.call-records__card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0 clamp(0.75rem, 2vw, 1.5rem) 0.5rem;
+  box-sizing: border-box;
+}
+
+.call-records__card {
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.call-records__card:hover {
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.call-records__card-datetime {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 0.65rem;
+}
+
+.call-records__card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  margin-bottom: 0.5rem;
+}
+
+.call-records__card-row--phone {
+  margin-bottom: 0.65rem;
+}
+
+.call-records__card-row--phone .call-records__phone-cell {
+  justify-content: flex-end;
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+}
+
+.call-records__card-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.call-records__card-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.call-records__card-audio-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.call-records__audio--card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 2.85rem;
+}
+
+.call-records__card-row--cost {
+  align-items: center;
+}
+
+.call-records__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.call-records__action--card {
+  flex: 1 1 auto;
+  min-width: 5rem;
+  text-align: center;
+}

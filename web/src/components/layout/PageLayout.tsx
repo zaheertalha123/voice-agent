@@ -12,6 +12,8 @@ interface PageLayoutProps {
   children: ReactNode;
   variant?: PageLayoutVariant;
   className?: string;
+  /** When true, shell fills main-content height so children can use flex + overflow for scrolling. */
+  contentFill?: boolean;
 }
 
 export function PageLayout({
@@ -23,11 +25,14 @@ export function PageLayout({
   children,
   variant = 'default',
   className = '',
+  contentFill = false,
 }: PageLayoutProps) {
   const hasHeader = eyebrow || title || subtitle || headerActions || icon;
 
   return (
-    <div className={`page-shell page-shell--${variant} ${className}`.trim()}>
+    <div
+      className={`page-shell page-shell--${variant} ${contentFill ? 'page-shell--fill' : ''} ${className}`.trim()}
+    >
       <div className="page-shell__inner">
         {hasHeader && (
           <header className="page-shell__header">

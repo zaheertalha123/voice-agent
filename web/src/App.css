@@ -218,6 +218,15 @@
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Let fill-mode pages (e.g. Call Records) consume height and scroll inside */
+.main-content > .page-shell--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-self: stretch;
 }
 
 @media (max-width: 36rem) {

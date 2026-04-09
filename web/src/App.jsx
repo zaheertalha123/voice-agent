@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, NavLink } from "react-router-dom";
 import "./App.css";
 import { Dashboard } from "./components/dashboard/Dashboard";
+import { CallRecords } from "./components/dashboard/CallRecords";
 import { OutboundCall } from "./components/outbound/OutboundCall";
 import { ManagePhoneNumber } from "./components/settings/ManagePhoneNumber";
 import { ManageBot } from "./components/settings/ManageBot";
@@ -27,6 +28,9 @@ function AppSidebar() {
 			<nav className="sidebar-nav" aria-label="Main">
 				<NavLink to="/" className={({ isActive }) => (isActive ? "active" : "")} end>
 					Dashboard
+				</NavLink>
+				<NavLink to="/calls" className={({ isActive }) => (isActive ? "active" : "")}>
+					Call Records
 				</NavLink>
 				<NavLink to="/outbound" className={({ isActive }) => (isActive ? "active" : "")}>
 					Call
@@ -64,6 +68,7 @@ function App() {
 									<main className="main-content">
 										<Routes>
 											<Route path="/" element={<Dashboard />} />
+											<Route path="/calls" element={<CallRecords />} />
 											<Route path="/outbound" element={<OutboundCall />} />
 											<Route path="/settings/phone" element={<ManagePhoneNumber />} />
 											<Route path="/settings/bot" element={<ManageBot />} />
