@@ -35,7 +35,14 @@ function CallDirectionIcon({ direction }: { direction: 'inbound' | 'outbound' })
       ) : (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
-            d="M5 19L19 5M19 5h-5M19 5v5"
+            d="M22 8l-6 6M16 8h6v6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
@@ -116,15 +123,15 @@ function CallRecordsTableRow({ call }: { call: Call }) {
 
   return (
     <tr className="call-records__row">
+      <td className="call-records__td call-records__td--dir">
+        <CallDirectionIcon direction={call.call_direction} />
+      </td>
       <td className="call-records__td call-records__td--datetime">
         <span className="call-records__mono">{formatCallDateTime(call.created_at)}</span>
       </td>
-      <td className="call-records__td">
-        <span className="call-records__phone-cell">
-          <CallDirectionIcon direction={call.call_direction} />
-          <span className="call-records__phone" title={call.caller_number}>
-            {formatCallPhone(call.caller_number)}
-          </span>
+      <td className="call-records__td call-records__td--phone">
+        <span className="call-records__phone" title={call.caller_number}>
+          {formatCallPhone(call.caller_number)}
         </span>
       </td>
       <td className="call-records__td call-records__td--status">
@@ -166,15 +173,15 @@ function CallRecordsMobileCard({ call }: { call: Call }) {
 
   return (
     <article className="call-records__card">
-      <div className="call-records__card-datetime call-records__mono">{formatCallDateTime(call.created_at)}</div>
+      <div className="call-records__card-datetime-row">
+        <CallDirectionIcon direction={call.call_direction} />
+        <span className="call-records__card-datetime call-records__mono">{formatCallDateTime(call.created_at)}</span>
+      </div>
 
       <div className="call-records__card-row call-records__card-row--phone">
         <span className="call-records__card-label">Phone</span>
-        <span className="call-records__phone-cell">
-          <CallDirectionIcon direction={call.call_direction} />
-          <span className="call-records__phone" title={call.caller_number}>
-            {formatCallPhone(call.caller_number)}
-          </span>
+        <span className="call-records__phone" title={call.caller_number}>
+          {formatCallPhone(call.caller_number)}
         </span>
       </div>
 
@@ -288,6 +295,9 @@ export function CallRecords() {
                   <table className="call-records__table">
                     <thead>
                       <tr>
+                        <th scope="col" className="call-records__th--dir">
+                          <span className="call-records__th-sr">Direction</span>
+                        </th>
                         <th scope="col">Date &amp; time</th>
                         <th scope="col">Phone number</th>
                         <th scope="col">Status</th>

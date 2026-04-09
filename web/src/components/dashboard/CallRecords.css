@@ -153,11 +153,31 @@
   white-space: nowrap;
 }
 
-.call-records__phone-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
+.call-records__th--dir {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  max-width: 2.75rem;
+  text-align: center;
+}
+
+.call-records__th-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.call-records__td--dir {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  max-width: 2.75rem;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .call-records__dir-icon {
@@ -186,6 +206,10 @@
 
 .call-records__xfer {
   margin-left: 0.35rem;
+}
+
+.call-records__td--phone {
+  min-width: 0;
 }
 
 .call-records__td--datetime {
@@ -397,8 +421,8 @@
 
 .call-tools-modal-empty {
   margin: 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.9rem;
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.88rem;
 }
 
 .call-tools-modal-list {
@@ -415,16 +439,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(245, 158, 11, 0.16);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.06);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.call-tools-modal-item:hover {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.06);
 }
 
 .call-tools-modal-name {
   font-size: 0.85rem;
   text-transform: capitalize;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(226, 232, 240, 0.95);
 }
 
 .call-tools-modal-count {
@@ -456,10 +487,19 @@
   border-color: rgba(245, 158, 11, 0.28);
 }
 
+.call-records__card-datetime-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  min-width: 0;
+}
+
 .call-records__card-datetime {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.75);
-  margin-bottom: 0.65rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .call-records__card-row {
@@ -475,8 +515,7 @@
   margin-bottom: 0.65rem;
 }
 
-.call-records__card-row--phone .call-records__phone-cell {
-  justify-content: flex-end;
+.call-records__card-row--phone .call-records__phone {
   text-align: right;
   flex: 1;
   min-width: 0;

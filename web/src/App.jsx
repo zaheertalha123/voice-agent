@@ -30,10 +30,10 @@ function AppSidebar() {
 					Dashboard
 				</NavLink>
 				<NavLink to="/calls" className={({ isActive }) => (isActive ? "active" : "")}>
-					Call Records
+					Calls
 				</NavLink>
 				<NavLink to="/outbound" className={({ isActive }) => (isActive ? "active" : "")}>
-					Call
+					Outbound
 				</NavLink>
 				<NavLink to="/settings/phone" className={({ isActive }) => (isActive ? "active" : "")}>
 					Phone
