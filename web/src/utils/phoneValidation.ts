@@ -86,3 +86,54 @@ export function formatPhoneForDisplay(phone: string): string {
   // Just return as-is if not a standard US format
   return cleaned;
 }
+
+/**
+ * US-centric formatting while typing: +1 (555) 123-4567
+ * Strips non-digits, caps at 11 digits (leading 1 + 10-digit NANP).
+ */
+export function formatPhoneInput(value: string): string {
+  const t = value.trim();
+  // Non-US E.164: keep + and digits only (no NANP mask)
+  if (t.startsWith("+") && !t.startsWith("+1")) {
+    return value.replace(/[^\d+]/g, "");
+  }
+
+  let digits = value.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+
+  if (digits.length > 11) {
+    digits = digits.slice(0, 11);
+  }
+
+  if (digits === "1") {
+    return "+1";
+  }
+
+  let n: string;
+  if (digits[0] === "1" && digits.length > 1) {
+    n = digits.slice(1, 11);
+  } else {
+    n = digits.slice(0, 10);
+  }
+
+  const a = n.slice(0, 3);
+  const b = n.slice(3, 6);
+  const c = n.slice(6, 10);
+
+  let result = "+1";
+  if (a.length > 0) {
+    result += ` (${a}`;
+    if (a.length === 3) result += ")";
+  }
+  if (b.length > 0) {
+    if (a.length === 3) result += " ";
+    result += b;
+  }
+  if (c.length > 0) {
+    if (b.length === 3) result += "-";
+    else if (b.length > 0) result += "-";
+    result += c;
+  }
+
+  return result;
+}

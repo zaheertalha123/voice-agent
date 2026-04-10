@@ -13,7 +13,7 @@ ON CONFLICT (org_id) DO NOTHING;
 -- ============================================
 INSERT INTO "public"."phone_numbers" ("phone_number", "org_id", "label", "direction", "created_at") VALUES
   ('+18382218584', '45544c76-efcc-42a1-89a9-91ec331eaec5', 'Main Line', 'outbound', '2026-03-09 17:24:08.991004+00')
-ON CONFLICT (phone_number) DO NOTHING;
+ON CONFLICT (org_id, phone_number, direction) DO NOTHING;
 
 -- ============================================
 -- BOT TOOLS (default for Talha Org)

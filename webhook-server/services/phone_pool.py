@@ -1,6 +1,6 @@
 """Phone number pool management (inbound/outbound by organization)."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from loguru import logger
 
@@ -13,7 +13,8 @@ class PhonePool:
     def __init__(self) -> None:
         self.inbound_pool: Dict[str, List[str]] = {}
         self.outbound_pool: Dict[str, List[str]] = {}
-        self.phone_directions: Dict[str, str] = {}
+        # Same E.164 may be both inbound and outbound; track all directions per number
+        self.phone_directions: Dict[str, Set[str]] = {}
 
     async def initialize(self) -> bool:
         """Load organizations, then phone numbers per org, into per-org pools."""
@@ -41,7 +42,9 @@ class PhonePool:
                         direction = direction.value
                     direction = str(direction).lower()
 
-                    self.phone_directions[phone_number] = direction
+                    if phone_number not in self.phone_directions:
+                        self.phone_directions[phone_number] = set()
+                    self.phone_directions[phone_number].add(direction)
 
                     if direction == "inbound":
                         self.inbound_pool[org_id].append(phone_number)
@@ -74,7 +77,13 @@ class PhonePool:
         return self.outbound_pool.get(org_id, [])
 
     def get_phone_direction(self, phone_number: str) -> Optional[str]:
-        return self.phone_directions.get(phone_number)
+        """Return 'both' if the number is used for inbound and outbound; else inbound or outbound."""
+        dirs = self.phone_directions.get(phone_number)
+        if not dirs:
+            return None
+        if len(dirs) >= 2:
+            return "both"
+        return next(iter(dirs))
 
     def get_stats(self) -> dict:
         total_inbound = sum(len(numbers) for numbers in self.inbound_pool.values())

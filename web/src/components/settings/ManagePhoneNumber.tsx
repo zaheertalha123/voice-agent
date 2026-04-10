@@ -8,6 +8,7 @@ import { PhoneGradientIcon } from '@/components/icons/PhoneGradientIcon';
 import './ManagePhoneNumber.css';
 
 interface PhoneNumber {
+  id: string;
   phone_number: string;
   org_id: string;
   label: string | null;
@@ -86,10 +87,12 @@ export function ManagePhoneNumber() {
       setIsLoading(true);
       getPhoneNumbersByOrg(organization.org_id).then(result => {
         if (result.data && result.data.length > 0) {
-          setCurrentPhone(result.data[0]); // Get the first (and should be only) number
-          setNewPhoneInput(result.data[0].phone_number);
-          setNewLabelInput(result.data[0].label || '');
-          setNewDirectionInput(result.data[0].direction);
+          const rows = result.data;
+          const primary = rows.find(p => p.direction === 'outbound') ?? rows[0];
+          setCurrentPhone(primary);
+          setNewPhoneInput(primary.phone_number);
+          setNewLabelInput(primary.label || '');
+          setNewDirectionInput(primary.direction);
         } else {
           setCurrentPhone(null);
           setNewPhoneInput('');

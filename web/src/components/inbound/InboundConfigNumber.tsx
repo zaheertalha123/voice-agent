@@ -8,6 +8,11 @@ import {
   updatePhoneNumber,
   type PhoneNumber,
 } from '@/services/supabase/phoneNumbers';
+import {
+  formatPhoneInput,
+  formatPhoneForDisplay,
+  validatePhoneNumber,
+} from '@/utils/phoneValidation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PhoneGradientIcon } from '@/components/icons/PhoneGradientIcon';
 import '@/components/settings/ManagePhoneNumber.css';
@@ -83,7 +88,7 @@ export function InboundConfigNumber() {
       const row = result.data?.[0] ?? null;
       setCurrentPhone(row);
       if (row) {
-        setPhoneInput(row.phone_number);
+        setPhoneInput(formatPhoneForDisplay(row.phone_number) || row.phone_number);
         setLabelInput(row.label || '');
       } else {
         setPhoneInput('');
@@ -93,20 +98,16 @@ export function InboundConfigNumber() {
     });
   }, [organization?.org_id, isAdmin]);
 
-  const formatPhoneNumber = (value: string) => value.replace(/[^\d+]/g, '');
-
-  const isValidPhoneNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 10;
-  };
+  const phoneValidation = validatePhoneNumber(phoneInput);
 
   const handleConfirmAdd = async () => {
     if (!isAdmin) {
       setMessage({ type: 'error', text: 'Only admins can add phone numbers' });
       return;
     }
-    if (!isValidPhoneNumber(phoneInput)) {
-      setMessage({ type: 'error', text: 'Please enter a valid phone number' });
+    const v = validatePhoneNumber(phoneInput);
+    if (!v.isValid) {
+      setMessage({ type: 'error', text: v.error || 'Please enter a valid phone number' });
       return;
     }
     if (!organization?.org_id) {
@@ -118,9 +119,9 @@ export function InboundConfigNumber() {
     setShowConfirmDialog(false);
 
     try {
-      const formatted = phoneInput.startsWith('+') ? phoneInput : `+${phoneInput}`;
+      const normalized = v.normalized;
       const result = await addPhoneNumber(
-        formatted,
+        normalized,
         organization.org_id,
         labelInput || undefined,
         INBOUND_DIRECTION,
@@ -131,7 +132,7 @@ export function InboundConfigNumber() {
       } else {
         setMessage({ type: 'success', text: 'Inbound number saved.' });
         setCurrentPhone(result.data || null);
-        setPhoneInput(formatted);
+        setPhoneInput(formatPhoneForDisplay(normalized) || normalized);
         await refreshPhonePool();
       }
     } catch (e) {
@@ -149,8 +150,9 @@ export function InboundConfigNumber() {
       setMessage({ type: 'error', text: 'Only admins can update phone numbers' });
       return;
     }
-    if (!isValidPhoneNumber(phoneInput)) {
-      setMessage({ type: 'error', text: 'Please enter a valid phone number' });
+    const v = validatePhoneNumber(phoneInput);
+    if (!v.isValid) {
+      setMessage({ type: 'error', text: v.error || 'Please enter a valid phone number' });
       return;
     }
     if (!organization?.org_id || !currentPhone) {
@@ -162,10 +164,10 @@ export function InboundConfigNumber() {
     setShowConfirmDialog(false);
 
     try {
-      const formatted = phoneInput.startsWith('+') ? phoneInput : `+${phoneInput}`;
+      const normalized = v.normalized;
       const result = await updatePhoneNumber(
         currentPhone.phone_number,
-        formatted,
+        normalized,
         organization.org_id,
         labelInput || undefined,
         INBOUND_DIRECTION,
@@ -176,7 +178,7 @@ export function InboundConfigNumber() {
       } else {
         setMessage({ type: 'success', text: 'Inbound number updated.' });
         setCurrentPhone(result.data || null);
-        setPhoneInput(formatted);
+        setPhoneInput(formatPhoneForDisplay(normalized) || normalized);
         await refreshPhonePool();
       }
     } catch (e) {
@@ -289,7 +291,7 @@ export function InboundConfigNumber() {
                       id="inbound-phone-input"
                       type="tel"
                       value={phoneInput}
-                      onChange={(e) => setPhoneInput(formatPhoneNumber(e.target.value))}
+                      onChange={(e) => setPhoneInput(formatPhoneInput(e.target.value))}
                       placeholder="+1 (555) 123-4567"
                       className="phone-input"
                       disabled={isSaving}
@@ -318,7 +320,7 @@ export function InboundConfigNumber() {
                     setConfirmAction('add');
                     setShowConfirmDialog(true);
                   }}
-                  disabled={isSaving || !isValidPhoneNumber(phoneInput)}
+                  disabled={isSaving || !phoneValidation.isValid}
                 >
                   {isSaving ? 'Saving…' : 'Save inbound number'}
                 </button>
@@ -329,7 +331,9 @@ export function InboundConfigNumber() {
                   <label className="section-label">Inbound number</label>
                   <div className="phone-card-display">
                     <div className="phone-display-content">
-                      <span className="phone-display-number">{currentPhone.phone_number}</span>
+                      <span className="phone-display-number">
+                        {formatPhoneForDisplay(currentPhone.phone_number) || currentPhone.phone_number}
+                      </span>
                       {currentPhone.label && (
                         <span className="phone-display-label">{currentPhone.label}</span>
                       )}
@@ -355,7 +359,7 @@ export function InboundConfigNumber() {
                         id="inbound-phone-edit"
                         type="tel"
                         value={phoneInput}
-                        onChange={(e) => setPhoneInput(formatPhoneNumber(e.target.value))}
+                        onChange={(e) => setPhoneInput(formatPhoneInput(e.target.value))}
                         placeholder="+1 (555) 123-4567"
                         className="phone-input"
                         disabled={isSaving}
@@ -384,7 +388,7 @@ export function InboundConfigNumber() {
                       setConfirmAction('update');
                       setShowConfirmDialog(true);
                     }}
-                    disabled={isSaving || !isValidPhoneNumber(phoneInput)}
+                    disabled={isSaving || !phoneValidation.isValid}
                   >
                     {isSaving ? 'Updating…' : 'Update inbound number'}
                   </button>
@@ -416,7 +420,9 @@ export function InboundConfigNumber() {
             <div className="dialog-content">
               <p>You are about to {confirmAction === 'add' ? 'save' : 'update'}:</p>
               <div className="phone-preview">
-                <span className="preview-number">{phoneInput}</span>
+                <span className="preview-number">
+                  {formatPhoneForDisplay(phoneInput) || phoneInput}
+                </span>
                 {labelInput && <span className="preview-label">{labelInput}</span>}
                 <span className="preview-direction">Inbound</span>
               </div>

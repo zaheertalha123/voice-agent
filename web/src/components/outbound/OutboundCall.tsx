@@ -14,6 +14,7 @@ interface CallState {
 }
 
 interface PhoneNumber {
+  id: string;
   phone_number: string;
   org_id: string;
   label: string | null;
@@ -54,8 +55,9 @@ export function OutboundCall() {
       getPhoneNumbersByOrg(organization.org_id).then(result => {
         if (result.data) {
           setPhoneNumbers(result.data);
-          // Set the first outbound phone number as default
-          const outboundPhone = result.data.find(p => p.label?.toLowerCase().includes('outbound'));
+          const outboundPhone =
+            result.data.find(p => p.direction === 'outbound') ??
+            result.data.find(p => p.label?.toLowerCase().includes('outbound'));
           if (outboundPhone) {
             setSelectedPhoneNumber(outboundPhone.phone_number);
           } else if (result.data.length > 0) {
@@ -149,8 +151,11 @@ export function OutboundCall() {
       return;
     }
 
-    // Check if the selected phone number is configured for outbound calls
-    const selectedPhoneObj = phoneNumbers.find(p => p.phone_number === selectedPhoneNumber);
+    // Prefer outbound row when the same E.164 exists for inbound + outbound
+    const selectedPhoneObj =
+      phoneNumbers.find(
+        p => p.phone_number === selectedPhoneNumber && p.direction === 'outbound',
+      ) ?? phoneNumbers.find(p => p.phone_number === selectedPhoneNumber);
     if (selectedPhoneObj && selectedPhoneObj.direction === 'inbound') {
       setCallState({
         status: 'error',

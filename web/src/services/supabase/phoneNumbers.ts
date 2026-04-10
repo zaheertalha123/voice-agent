@@ -6,6 +6,7 @@ import { supabase } from './client';
 // Superadmins can see and manage all phone numbers across organizations.
 
 export interface PhoneNumber {
+  id: string;
   phone_number: string;
   org_id: string;
   label: string | null;
@@ -64,13 +65,14 @@ export async function getOrgByPhoneNumber(phoneNumber: string): Promise<{ data: 
     .from('phone_numbers')
     .select('org_id')
     .eq('phone_number', phoneNumber)
-    .single();
+    .limit(1);
 
   if (error) {
     return { data: null, error: error.message };
   }
 
-  return { data: data?.org_id || null, error: null };
+  const row = Array.isArray(data) ? data[0] : null;
+  return { data: row?.org_id ?? null, error: null };
 }
 
 export async function addPhoneNumber(
@@ -107,26 +109,28 @@ export async function updatePhoneNumber(
   direction?: 'inbound' | 'outbound'
 ): Promise<{ data: PhoneNumber | null; error: string | null }> {
   const client = ensureSupabase();
+  const dir = direction ?? 'inbound';
 
   try {
-    // Delete old number
+    // Remove only this org's row for this direction (same E.164 can exist for inbound + outbound)
     const { error: deleteError } = await client
       .from('phone_numbers')
       .delete()
-      .eq('phone_number', oldPhoneNumber);
+      .eq('phone_number', oldPhoneNumber)
+      .eq('org_id', orgId)
+      .eq('direction', dir);
 
     if (deleteError) {
       return { data: null, error: deleteError.message };
     }
 
-    // Insert new number
     const { data: insertData, error: insertError } = await client
       .from('phone_numbers')
       .insert({
         phone_number: newPhoneNumber,
         org_id: orgId,
         label: label || null,
-        direction: direction || 'inbound'
+        direction: dir,
       })
       .select()
       .single();
@@ -141,13 +145,18 @@ export async function updatePhoneNumber(
   }
 }
 
-export async function removePhoneNumber(phoneNumber: string): Promise<{ error: string | null }> {
+export async function removePhoneNumber(
+  phoneNumber: string,
+  direction?: 'inbound' | 'outbound'
+): Promise<{ error: string | null }> {
   const client = ensureSupabase();
 
-  const { error } = await client
-    .from('phone_numbers')
-    .delete()
-    .eq('phone_number', phoneNumber);
+  let q = client.from('phone_numbers').delete().eq('phone_number', phoneNumber);
+  if (direction) {
+    q = q.eq('direction', direction);
+  }
+
+  const { error } = await q;
 
   if (error) {
     return { error: error.message };

@@ -173,10 +173,11 @@ async def get_organization_id_for_phone(phone_number: str) -> Optional[str]:
             client.table("phone_numbers")
             .select("org_id")
             .eq("phone_number", phone_number)
-            .single()
+            .limit(1)
             .execute()
         )
-        return result.data.get("org_id") if result.data else None
+        rows = result.data or []
+        return rows[0].get("org_id") if rows else None
     except Exception:
         logger.debug(f"Phone {phone_number} not found in phone_numbers")
         return None
