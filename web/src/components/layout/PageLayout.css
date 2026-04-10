@@ -105,6 +105,27 @@
   min-width: 0;
 }
 
+/* Fill viewport column under main header — for list pages that scroll internally */
+.page-shell--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-shell--fill .page-shell__inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-shell--fill .page-shell__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
 /* Secondary panels inside a page */
 .page-section {
   background: rgba(8, 7, 11, 0.72);
