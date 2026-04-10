@@ -36,6 +36,27 @@ export async function getPhoneNumbersByOrg(orgId: string): Promise<{ data: Phone
   return { data: data as PhoneNumber[], error: null };
 }
 
+/** Numbers for an org filtered by call direction (e.g. inbound-only config page). */
+export async function getPhoneNumbersByOrgAndDirection(
+  orgId: string,
+  direction: 'inbound' | 'outbound',
+): Promise<{ data: PhoneNumber[] | null; error: string | null }> {
+  const client = ensureSupabase();
+
+  const { data, error } = await client
+    .from('phone_numbers')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('direction', direction)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: data as PhoneNumber[], error: null };
+}
+
 export async function getOrgByPhoneNumber(phoneNumber: string): Promise<{ data: string | null; error: string | null }> {
   const client = ensureSupabase();
 
