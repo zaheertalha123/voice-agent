@@ -67,24 +67,43 @@ export function validatePhoneNumber(input: string): PhoneValidationResult {
 /**
  * Format phone for display (adds hyphens/parentheses for readability)
  * E.g., +15551234567 → +1 (555) 123-4567
+ * Uses validation first so 10/11-digit NANP stored without "+" still formats.
  */
 export function formatPhoneForDisplay(phone: string): string {
   if (!phone) return "";
 
-  // Remove all non-digits except leading +
-  const cleaned = phone.replace(/[^\d+]/g, "");
+  const v = validatePhoneNumber(phone);
+  if (v.isValid) {
+    const n = v.normalized;
+    if (n.startsWith("+1")) {
+      const digits = n.slice(2);
+      if (digits.length === 10) {
+        return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+      }
+    }
+    return n;
+  }
 
-  // If it has +1 prefix
+  const cleaned = phone.replace(/[^\d+]/g, "");
   if (cleaned.startsWith("+1")) {
     const digits = cleaned.slice(2);
     if (digits.length === 10) {
       return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     }
-    return cleaned;
   }
-
-  // Just return as-is if not a standard US format
   return cleaned;
+}
+
+/**
+ * Value for tel inputs when loading from DB (E.164, 10-digit US, formatted strings).
+ * Matches {@link formatPhoneInput} output so outbound/inbound mirror each other after fetch.
+ */
+export function formatStoredPhoneForInput(stored: string): string {
+  const v = validatePhoneNumber(stored);
+  if (v.isValid) {
+    return formatPhoneInput(v.normalized);
+  }
+  return formatPhoneForDisplay(stored) || stored;
 }
 
 /**

@@ -2,18 +2,43 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/services/supabase/client';
-import { getPhoneNumbersByOrg, updatePhoneNumber, addPhoneNumber } from '@/services/supabase/phoneNumbers';
+import {
+  getPhoneNumbersByOrgAndDirection,
+  updatePhoneNumber,
+  addPhoneNumber,
+  type PhoneNumber,
+} from '@/services/supabase/phoneNumbers';
+import {
+  formatPhoneInput,
+  formatPhoneForDisplay,
+  formatStoredPhoneForInput,
+  validatePhoneNumber,
+} from '@/utils/phoneValidation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PhoneGradientIcon } from '@/components/icons/PhoneGradientIcon';
 import './ManagePhoneNumber.css';
 
-interface PhoneNumber {
-  id: string;
-  phone_number: string;
-  org_id: string;
-  label: string | null;
-  direction: 'inbound' | 'outbound';
-  created_at: string;
+const OUTBOUND_DIRECTION = 'outbound' as const;
+
+async function refreshPhonePool() {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const authToken = session?.access_token;
+    if (!authToken) return;
+
+    const webhookUrl = import.meta.env.VITE_WEBHOOK_SERVER_URL || 'http://localhost:8080';
+    await fetch(`${webhookUrl}/refresh-phone-pool`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+  } catch {
+    /* non-fatal */
+  }
 }
 
 export function ManagePhoneNumber() {
@@ -23,118 +48,56 @@ export function ManagePhoneNumber() {
   const [currentPhone, setCurrentPhone] = useState<PhoneNumber | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [newPhoneInput, setNewPhoneInput] = useState('');
-  const [newLabelInput, setNewLabelInput] = useState('');
-  const [newDirectionInput, setNewDirectionInput] = useState<'inbound' | 'outbound'>('outbound');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [labelInput, setLabelInput] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'add' | 'update'>('add');
 
-  // Refresh phone pool on webhook server when phone number changes
-  const refreshPhonePool = async () => {
-    try {
-      console.log('🔄 Refreshing phone pool on webhook server...');
+  const isAdmin = user?.role === 'admin';
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token;
-
-      if (!authToken) {
-        console.error('❌ No auth token available for refresh');
-        return;
-      }
-
-      const webhookUrl = import.meta.env.VITE_WEBHOOK_SERVER_URL || 'http://localhost:8080';
-      const response = await fetch(`${webhookUrl}/refresh-phone-pool`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ Phone pool refreshed successfully:`, data.stats);
-      } else {
-        console.error(`❌ Failed to refresh phone pool (HTTP ${response.status})`, await response.text());
-      }
-    } catch (error) {
-      console.error('❌ Error refreshing phone pool:', error);
-    }
-  };
-
-  // Auto-dismiss messages after 3 seconds
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setMessage(null), 3000);
+      return () => clearTimeout(t);
     }
   }, [message]);
 
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin';
-
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Fetch phone number for organization
   useEffect(() => {
-    if (organization?.org_id) {
-      setIsLoading(true);
-      getPhoneNumbersByOrg(organization.org_id).then(result => {
-        if (result.data && result.data.length > 0) {
-          const rows = result.data;
-          const primary = rows.find(p => p.direction === 'outbound') ?? rows[0];
-          setCurrentPhone(primary);
-          setNewPhoneInput(primary.phone_number);
-          setNewLabelInput(primary.label || '');
-          setNewDirectionInput(primary.direction);
-        } else {
-          setCurrentPhone(null);
-          setNewPhoneInput('');
-          setNewLabelInput('');
-          setNewDirectionInput('outbound');
-        }
-        setIsLoading(false);
-      });
-    }
-  }, [organization?.org_id]);
+    if (!organization?.org_id || !isAdmin) return;
+    setIsLoading(true);
+    getPhoneNumbersByOrgAndDirection(organization.org_id, OUTBOUND_DIRECTION).then(result => {
+      const row = result.data?.[0] ?? null;
+      setCurrentPhone(row);
+      if (row) {
+        setPhoneInput(formatStoredPhoneForInput(row.phone_number));
+        setLabelInput(row.label || '');
+      } else {
+        setPhoneInput('');
+        setLabelInput('');
+      }
+      setIsLoading(false);
+    });
+  }, [organization?.org_id, isAdmin]);
 
-  const formatPhoneNumber = (value: string) => {
-    const cleaned = value.replace(/[^\d+]/g, '');
-    return cleaned;
-  };
-
-  const isValidPhoneNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 10;
-  };
-
-  const handleAddClick = () => {
-    setConfirmAction('add');
-    setShowConfirmDialog(true);
-  };
-
-  const handleUpdateClick = () => {
-    setConfirmAction('update');
-    setShowConfirmDialog(true);
-  };
+  const phoneValidation = validatePhoneNumber(phoneInput);
 
   const handleConfirmAdd = async () => {
     if (!isAdmin) {
       setMessage({ type: 'error', text: 'Only admins can add phone numbers' });
       return;
     }
-
-    if (!isValidPhoneNumber(newPhoneInput)) {
-      setMessage({ type: 'error', text: 'Please enter a valid phone number' });
+    const v = validatePhoneNumber(phoneInput);
+    if (!v.isValid) {
+      setMessage({ type: 'error', text: v.error || 'Please enter a valid phone number' });
       return;
     }
-
     if (!organization?.org_id) {
       setMessage({ type: 'error', text: 'Organization not found' });
       return;
@@ -144,27 +107,26 @@ export function ManagePhoneNumber() {
     setShowConfirmDialog(false);
 
     try {
-      const formattedPhone = newPhoneInput.startsWith('+') ? newPhoneInput : `+${newPhoneInput}`;
+      const normalized = v.normalized;
       const result = await addPhoneNumber(
-        formattedPhone,
+        normalized,
         organization.org_id,
-        newLabelInput || undefined,
-        newDirectionInput
+        labelInput || undefined,
+        OUTBOUND_DIRECTION,
       );
 
       if (result.error) {
         setMessage({ type: 'error', text: result.error });
       } else {
-        setMessage({ type: 'success', text: 'Phone number added successfully!' });
+        setMessage({ type: 'success', text: 'Outbound number saved.' });
         setCurrentPhone(result.data || null);
-        setNewPhoneInput(formattedPhone);
-        // Refresh phone pool on webhook server
+        setPhoneInput(formatStoredPhoneForInput(normalized));
         await refreshPhonePool();
       }
-    } catch (error) {
+    } catch (e) {
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to add phone number',
+        text: e instanceof Error ? e.message : 'Failed to add phone number',
       });
     } finally {
       setIsSaving(false);
@@ -176,14 +138,13 @@ export function ManagePhoneNumber() {
       setMessage({ type: 'error', text: 'Only admins can update phone numbers' });
       return;
     }
-
-    if (!isValidPhoneNumber(newPhoneInput)) {
-      setMessage({ type: 'error', text: 'Please enter a valid phone number' });
+    const v = validatePhoneNumber(phoneInput);
+    if (!v.isValid) {
+      setMessage({ type: 'error', text: v.error || 'Please enter a valid phone number' });
       return;
     }
-
     if (!organization?.org_id || !currentPhone) {
-      setMessage({ type: 'error', text: 'Organization or phone not found' });
+      setMessage({ type: 'error', text: 'Organization or number not found' });
       return;
     }
 
@@ -191,28 +152,27 @@ export function ManagePhoneNumber() {
     setShowConfirmDialog(false);
 
     try {
-      const formattedPhone = newPhoneInput.startsWith('+') ? newPhoneInput : `+${newPhoneInput}`;
+      const normalized = v.normalized;
       const result = await updatePhoneNumber(
         currentPhone.phone_number,
-        formattedPhone,
+        normalized,
         organization.org_id,
-        newLabelInput || undefined,
-        newDirectionInput
+        labelInput || undefined,
+        OUTBOUND_DIRECTION,
       );
 
       if (result.error) {
         setMessage({ type: 'error', text: result.error });
       } else {
-        setMessage({ type: 'success', text: 'Phone number updated successfully!' });
+        setMessage({ type: 'success', text: 'Outbound number updated.' });
         setCurrentPhone(result.data || null);
-        setNewPhoneInput(formattedPhone);
-        // Refresh phone pool on webhook server
+        setPhoneInput(formatStoredPhoneForInput(normalized));
         await refreshPhonePool();
       }
-    } catch (error) {
+    } catch (e) {
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update phone number',
+        text: e instanceof Error ? e.message : 'Failed to update phone number',
       });
     } finally {
       setIsSaving(false);
@@ -224,9 +184,9 @@ export function ManagePhoneNumber() {
       <PageLayout
         className="manage-phone"
         variant="default"
-        eyebrow="Settings"
-        title="Phone numbers"
-        subtitle="Configure your organization's phone numbers"
+        eyebrow="Outbound"
+        title="Config number"
+        subtitle="Outbound phone number for your organization"
         icon={<PhoneGradientIcon gradientId="manage-phone-grad" />}
       >
         <div className="manage-phone-loading">
@@ -238,6 +198,25 @@ export function ManagePhoneNumber() {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (!isAdmin) {
+    return (
+      <PageLayout
+        className="manage-phone"
+        variant="wide"
+        eyebrow="Outbound"
+        title="Config number"
+        subtitle="Outbound phone number for your organization"
+        icon={<PhoneGradientIcon gradientId="manage-phone-grad" />}
+      >
+        <div className="inbound-config-layout">
+          <div className="manage-phone-card inbound-access-denied">
+            <p className="inbound-access-denied__text">You are not allowed to view this page.</p>
+          </div>
+        </div>
+      </PageLayout>
+    );
   }
 
   return (
@@ -263,261 +242,197 @@ export function ManagePhoneNumber() {
       <PageLayout
         className="manage-phone"
         variant="wide"
-        eyebrow="Settings"
-        title="Phone numbers"
-        subtitle="Configure your organization's outbound and inbound numbers"
+        eyebrow="Outbound"
+        title="Config number"
+        subtitle="Set the phone number used for outbound calls from your organization"
         icon={<PhoneGradientIcon gradientId="manage-phone-grad" />}
       >
-        <div className="manage-phone-page-grid">
-          <aside className="manage-phone-page-aside">
-            {organization && (
-              <div className="org-info-card">
-                <div className="info-row">
-                  <label>Organization:</label>
-                  <span className="info-value">{organization.name}</span>
-                </div>
-                <div className="info-row">
-                  <label>Permission:</label>
-                  <span className={`status ${isAdmin ? 'authorized' : 'restricted'}`}>
-                    {isAdmin ? '✓ You can manage phone numbers' : '✗ Only admins can manage phone numbers'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </aside>
-
-          <div className="manage-phone-page-main">
-        <div className="manage-phone-card">
-          {isLoading ? (
-            <div className="loading-state">
-              <div className="loading-spinner" />
-              <p>Loading phone number...</p>
+        <div className="inbound-config-layout">
+          {organization && (
+            <div className="inbound-org-strip">
+              <span className="inbound-org-strip__label">Organization</span>
+              <span className="inbound-org-strip__name">{organization.name}</span>
             </div>
-          ) : !currentPhone ? (
-            // No Phone Number State - Show form to add number
-            <div className="no-phone-state">
-              {!isAdmin ? (
-                <>
-                  <div className="empty-icon">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M3 3l18 18" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
+          )}
+
+          <div className="manage-phone-card">
+            {isLoading ? (
+              <div className="loading-state">
+                <div className="loading-spinner" />
+                <p>Loading outbound number…</p>
+              </div>
+            ) : !currentPhone ? (
+              <div className="no-phone-state">
+                <h3>Set outbound number</h3>
+                <p>This number is stored as your organization&apos;s outbound caller ID.</p>
+
+                <div className="form-group">
+                  <label htmlFor="outbound-phone-input">Phone number</label>
+                  <div className="phone-input-wrapper">
+                    <span className="phone-prefix">📞</span>
+                    <input
+                      id="outbound-phone-input"
+                      type="tel"
+                      value={phoneInput}
+                      onChange={e => setPhoneInput(formatPhoneInput(e.target.value))}
+                      placeholder="+1 (555) 123-4567"
+                      className="phone-input"
+                      disabled={isSaving}
+                    />
                   </div>
-                  <h3>No Phone Number Configured</h3>
-                  <p>Contact an administrator to configure the phone number</p>
-                </>
-              ) : (
-                <>
-                  <h3>Add Your First Phone Number</h3>
-                  <p>Configure your organization's phone number to enable calls</p>
+                  <span className="input-hint">Include country code (e.g. +1 for US)</span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="outbound-label-input">Label (optional)</label>
+                  <input
+                    id="outbound-label-input"
+                    type="text"
+                    value={labelInput}
+                    onChange={e => setLabelInput(e.target.value)}
+                    placeholder="e.g. Main line"
+                    className="label-input"
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="update-button"
+                  onClick={() => {
+                    setConfirmAction('add');
+                    setShowConfirmDialog(true);
+                  }}
+                  disabled={isSaving || !phoneValidation.isValid}
+                >
+                  {isSaving ? 'Saving…' : 'Save outbound number'}
+                </button>
+              </div>
+            ) : (
+              <div className="phone-display">
+                <div className="phone-section">
+                  <label className="section-label">Outbound number</label>
+                  <div className="phone-card-display">
+                    <div className="phone-display-content">
+                      <span className="phone-display-number">
+                        {formatPhoneForDisplay(currentPhone.phone_number) || currentPhone.phone_number}
+                      </span>
+                      {currentPhone.label && (
+                        <span className="phone-display-label">{currentPhone.label}</span>
+                      )}
+                      <span className="phone-display-direction">
+                        Direction: <span className="direction-badge outbound">Outbound</span>
+                      </span>
+                    </div>
+                    <div className="phone-display-meta">
+                      <span className="configured-badge">✓ Configured</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divider" />
+                <div className="edit-section">
+                  <label className="section-label">Update outbound number</label>
 
                   <div className="form-group">
-                    <label htmlFor="phone-input">Phone Number</label>
+                    <label htmlFor="outbound-phone-edit">Phone number</label>
                     <div className="phone-input-wrapper">
                       <span className="phone-prefix">📞</span>
                       <input
-                        id="phone-input"
+                        id="outbound-phone-edit"
                         type="tel"
-                        value={newPhoneInput}
-                        onChange={(e) => setNewPhoneInput(formatPhoneNumber(e.target.value))}
+                        value={phoneInput}
+                        onChange={e => setPhoneInput(formatPhoneInput(e.target.value))}
                         placeholder="+1 (555) 123-4567"
                         className="phone-input"
                         disabled={isSaving}
                       />
                     </div>
-                    <span className="input-hint">Include country code (e.g., +1 for US)</span>
+                    <span className="input-hint">Include country code (e.g. +1 for US)</span>
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="label-input">Label (Optional)</label>
+                    <label htmlFor="outbound-label-edit">Label (optional)</label>
                     <input
-                      id="label-input"
+                      id="outbound-label-edit"
                       type="text"
-                      value={newLabelInput}
-                      onChange={(e) => setNewLabelInput(e.target.value)}
-                      placeholder="e.g., Outbound, Support"
+                      value={labelInput}
+                      onChange={e => setLabelInput(e.target.value)}
+                      placeholder="e.g. Main line"
                       className="label-input"
                       disabled={isSaving}
                     />
-                    <span className="input-hint">Friendly name for identification</span>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="direction-input">Call Direction</label>
-                    <select
-                      id="direction-input"
-                      value={newDirectionInput}
-                      onChange={(e) => setNewDirectionInput(e.target.value as 'inbound' | 'outbound')}
-                      className="direction-input"
-                      disabled={isSaving}
-                    >
-                      <option value="inbound">Inbound</option>
-                      <option value="outbound">Outbound</option>
-                    </select>
-                    <span className="input-hint">Whether this number handles incoming or outgoing calls</span>
                   </div>
 
                   <button
+                    type="button"
                     className="update-button"
-                    onClick={handleAddClick}
-                    disabled={isSaving || !isValidPhoneNumber(newPhoneInput)}
+                    onClick={() => {
+                      setConfirmAction('update');
+                      setShowConfirmDialog(true);
+                    }}
+                    disabled={isSaving || !phoneValidation.isValid}
                   >
-                    {isSaving ? 'Adding...' : 'Add Phone Number'}
+                    {isSaving ? 'Updating…' : 'Update outbound number'}
                   </button>
-                </>
-              )}
-            </div>
-          ) : (
-            // Current Phone Number State
-            <div className="phone-display">
-              <div className="phone-section">
-                <label className="section-label">Current Phone Number</label>
-                <div className="phone-card-display">
-                  <div className="phone-display-content">
-                    <span className="phone-display-number">{currentPhone.phone_number}</span>
-                    {currentPhone.label && (
-                      <span className="phone-display-label">{currentPhone.label}</span>
-                    )}
-                    <span className="phone-display-direction">
-                      Direction: <span className={`direction-badge ${currentPhone.direction}`}>{currentPhone.direction.charAt(0).toUpperCase() + currentPhone.direction.slice(1)}</span>
-                    </span>
-                  </div>
-                  <div className="phone-display-meta">
-                    <span className="configured-badge">✓ Configured</span>
-                  </div>
                 </div>
               </div>
-
-              {isAdmin && (
-                <>
-                  <div className="divider" />
-
-                  <div className="edit-section">
-                    <label className="section-label">Edit Phone Number</label>
-
-                    <div className="form-group">
-                      <label htmlFor="phone-input">Phone Number</label>
-                      <div className="phone-input-wrapper">
-                        <span className="phone-prefix">📞</span>
-                        <input
-                          id="phone-input"
-                          type="tel"
-                          value={newPhoneInput}
-                          onChange={(e) => setNewPhoneInput(formatPhoneNumber(e.target.value))}
-                          placeholder="+1 (555) 123-4567"
-                          className="phone-input"
-                          disabled={isSaving}
-                        />
-                      </div>
-                      <span className="input-hint">Include country code (e.g., +1 for US)</span>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="label-input">Label (Optional)</label>
-                      <input
-                        id="label-input"
-                        type="text"
-                        value={newLabelInput}
-                        onChange={(e) => setNewLabelInput(e.target.value)}
-                        placeholder="e.g., Outbound, Support"
-                        className="label-input"
-                        disabled={isSaving}
-                      />
-                      <span className="input-hint">Friendly name for identification</span>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="direction-input">Call Direction</label>
-                      <select
-                        id="direction-input"
-                        value={newDirectionInput}
-                        onChange={(e) => setNewDirectionInput(e.target.value as 'inbound' | 'outbound')}
-                        className="direction-input"
-                        disabled={isSaving}
-                      >
-                        <option value="inbound">Inbound</option>
-                        <option value="outbound">Outbound</option>
-                      </select>
-                      <span className="input-hint">Whether this number handles incoming or outgoing calls</span>
-                    </div>
-
-                    <button
-                      className="update-button"
-                      onClick={handleUpdateClick}
-                      disabled={isSaving || !isValidPhoneNumber(newPhoneInput)}
-                    >
-                      {isSaving ? 'Updating...' : 'Update Phone Number'}
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {!isAdmin && (
-                <div className="admin-only-message">
-                  <p>Only administrators can modify phone numbers. Contact your organization admin for changes.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Confirmation Dialog */}
-        {showConfirmDialog && (
-          <div className="confirmation-overlay">
-            <div className="confirmation-dialog">
-              <div className="dialog-header">
-                <h3>{confirmAction === 'add' ? 'Confirm Add Phone Number' : 'Confirm Update Phone Number'}</h3>
-              </div>
-
-              <div className="dialog-content">
-                <p>You are about to {confirmAction === 'add' ? 'add' : 'update'} the phone number:</p>
-                <div className="phone-preview">
-                  <span className="preview-number">{newPhoneInput}</span>
-                  {newLabelInput && <span className="preview-label">{newLabelInput}</span>}
-                  <span className="preview-direction">{newDirectionInput.charAt(0).toUpperCase() + newDirectionInput.slice(1)}</span>
-                </div>
-                <p className="confirm-warning">
-                  {confirmAction === 'add'
-                    ? `This number will be used for ${newDirectionInput} calls from your organization.`
-                    : 'This will replace the current phone number. Existing calls may be affected.'}
-                </p>
-              </div>
-
-              <div className="dialog-actions">
-                <button
-                  className="cancel-button"
-                  onClick={() => setShowConfirmDialog(false)}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="confirm-button"
-                  onClick={confirmAction === 'add' ? handleConfirmAdd : handleConfirmUpdate}
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Processing...' : 'Confirm'}
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Info Section */}
-        <div className="manage-phone-info">
-          <h4>Information</h4>
-          <ul>
-            <li>Your organization can have only ONE outbound phone number</li>
-            <li>This number is used for all outbound calls to customers</li>
-            <li>Only administrators can configure or change the phone number</li>
-            <li>Changes take effect immediately</li>
-            <li>Include the country code (e.g., +1 for US phone numbers)</li>
-          </ul>
-        </div>
+          <div className="manage-phone-info">
+            <h4>Information</h4>
+            <ul>
+              <li>This page only configures your outbound number (direction is always outbound).</li>
+              <li>Inbound numbers are configured under Inbound → Config Number.</li>
+              <li>Include the country code (e.g. +1 for US).</li>
+            </ul>
           </div>
         </div>
       </PageLayout>
+
+      {showConfirmDialog && (
+        <div className="confirmation-overlay">
+          <div className="confirmation-dialog">
+            <div className="dialog-header">
+              <h3>{confirmAction === 'add' ? 'Confirm outbound number' : 'Confirm update'}</h3>
+            </div>
+            <div className="dialog-content">
+              <p>You are about to {confirmAction === 'add' ? 'save' : 'update'}:</p>
+              <div className="phone-preview">
+                <span className="preview-number">
+                  {formatPhoneForDisplay(phoneInput) || phoneInput}
+                </span>
+                {labelInput && <span className="preview-label">{labelInput}</span>}
+                <span className="preview-direction">Outbound</span>
+              </div>
+              <p className="confirm-warning">
+                {confirmAction === 'add'
+                  ? 'This number will be used as your organization outbound caller ID.'
+                  : 'This replaces the current outbound number. Existing calls may be affected.'}
+              </p>
+            </div>
+            <div className="dialog-actions">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setShowConfirmDialog(false)}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="confirm-button"
+                onClick={confirmAction === 'add' ? handleConfirmAdd : handleConfirmUpdate}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Processing…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 import {
   formatPhoneInput,
   formatPhoneForDisplay,
+  formatStoredPhoneForInput,
   validatePhoneNumber,
 } from '@/utils/phoneValidation';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -88,7 +89,7 @@ export function InboundConfigNumber() {
       const row = result.data?.[0] ?? null;
       setCurrentPhone(row);
       if (row) {
-        setPhoneInput(formatPhoneForDisplay(row.phone_number) || row.phone_number);
+        setPhoneInput(formatStoredPhoneForInput(row.phone_number));
         setLabelInput(row.label || '');
       } else {
         setPhoneInput('');
@@ -132,7 +133,7 @@ export function InboundConfigNumber() {
       } else {
         setMessage({ type: 'success', text: 'Inbound number saved.' });
         setCurrentPhone(result.data || null);
-        setPhoneInput(formatPhoneForDisplay(normalized) || normalized);
+        setPhoneInput(formatStoredPhoneForInput(normalized));
         await refreshPhonePool();
       }
     } catch (e) {
@@ -178,7 +179,7 @@ export function InboundConfigNumber() {
       } else {
         setMessage({ type: 'success', text: 'Inbound number updated.' });
         setCurrentPhone(result.data || null);
-        setPhoneInput(formatPhoneForDisplay(normalized) || normalized);
+        setPhoneInput(formatStoredPhoneForInput(normalized));
         await refreshPhonePool();
       }
     } catch (e) {

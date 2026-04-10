@@ -3,6 +3,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getPhoneNumbersByOrg } from '@/services/supabase/phoneNumbers';
 import { supabase } from '@/services/supabase/client';
+import {
+  formatPhoneInput,
+  formatPhoneForDisplay,
+  validatePhoneNumber,
+} from '@/utils/phoneValidation';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PhoneGradientIcon } from '@/components/icons/PhoneGradientIcon';
 import './OutboundCall.css';
@@ -58,10 +63,10 @@ export function OutboundCall() {
           const outboundPhone =
             result.data.find(p => p.direction === 'outbound') ??
             result.data.find(p => p.label?.toLowerCase().includes('outbound'));
-          if (outboundPhone) {
-            setSelectedPhoneNumber(outboundPhone.phone_number);
-          } else if (result.data.length > 0) {
-            setSelectedPhoneNumber(result.data[0].phone_number);
+          const pickRaw = outboundPhone ?? result.data[0];
+          if (pickRaw) {
+            const v = validatePhoneNumber(pickRaw.phone_number);
+            setSelectedPhoneNumber(v.isValid ? v.normalized : pickRaw.phone_number);
           }
         }
       });
@@ -124,25 +129,25 @@ export function OutboundCall() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  const formatPhoneNumber = (value: string) => {
-    const cleaned = value.replace(/[^\d+]/g, '');
-    return cleaned;
-  };
+  const phoneTargetValidation = validatePhoneNumber(phoneNumber);
+  const selectedCallerLabel =
+    phoneNumbers.find(
+      p => p.phone_number === selectedPhoneNumber && p.direction === 'outbound',
+    )?.label ?? phoneNumbers.find(p => p.phone_number === selectedPhoneNumber)?.label;
+  const calleeDisplay = formatPhoneForDisplay(phoneNumber) || phoneNumber;
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhoneNumber(formatPhoneNumber(e.target.value));
-  };
-
-  const isValidPhoneNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 10;
+    setPhoneNumber(formatPhoneInput(e.target.value));
   };
 
   const initiateCall = async (targetPhone: string = phoneNumber) => {
     const finalPhone = targetPhone || phoneNumber;
-
-    if (!isValidPhoneNumber(finalPhone)) {
-      setCallState({ status: 'error', message: 'Please enter a valid phone number' });
+    const v = validatePhoneNumber(finalPhone);
+    if (!v.isValid) {
+      setCallState({
+        status: 'error',
+        message: v.error || 'Please enter a valid phone number',
+      });
       return;
     }
 
@@ -164,9 +169,9 @@ export function OutboundCall() {
       return;
     }
 
-    // Update phone number in state if calling with test number
+    // Update phone number in state if calling with test number (same formatted UX as manual entry)
     if (targetPhone && targetPhone !== phoneNumber) {
-      setPhoneNumber(targetPhone);
+      setPhoneNumber(formatPhoneInput(targetPhone));
     }
 
     setCallState({ status: 'calling', message: 'Initiating call...' });
@@ -189,7 +194,7 @@ export function OutboundCall() {
           'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          phone_number: finalPhone.startsWith('+') ? finalPhone : `+${finalPhone}`,
+          phone_number: v.normalized,
           caller_phone: selectedPhoneNumber,
           org_id: organization?.org_id,
         }),
@@ -295,12 +300,10 @@ export function OutboundCall() {
                 <div className="info-item">
                   <label>Calling From:</label>
                   <span className="info-value">
-                    {selectedPhoneNumber}
-                    {phoneNumbers.find(p => p.phone_number === selectedPhoneNumber)?.label && (
-                      <span className="info-label">
-                        ({phoneNumbers.find(p => p.phone_number === selectedPhoneNumber)?.label})
-                      </span>
-                    )}
+                    {formatPhoneForDisplay(selectedPhoneNumber) || selectedPhoneNumber}
+                    {selectedCallerLabel ? (
+                      <span className="info-label"> ({selectedCallerLabel})</span>
+                    ) : null}
                   </span>
                 </div>
               </div>
@@ -372,7 +375,7 @@ export function OutboundCall() {
                 <button
                   className="call-button"
                   onClick={() => initiateCall()}
-                  disabled={!phoneNumber || !webhookOnline}
+                  disabled={!phoneTargetValidation.isValid || !webhookOnline}
                   title={!webhookOnline ? 'Webhook server is offline' : undefined}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -407,7 +410,7 @@ export function OutboundCall() {
                   <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h3>Calling {phoneNumber}</h3>
+              <h3>Calling {calleeDisplay}</h3>
               <p>{callState.message}</p>
             </div>
           )}
@@ -424,11 +427,13 @@ export function OutboundCall() {
               <p>{callState.message}</p>
               <div className="call-details">
                 <span className="detail-label">Calling:</span>
-                <span className="detail-value">{phoneNumber}</span>
+                <span className="detail-value">{calleeDisplay}</span>
               </div>
               <div className="call-details">
                 <span className="detail-label">From:</span>
-                <span className="detail-value">{selectedPhoneNumber}</span>
+                <span className="detail-value">
+                  {formatPhoneForDisplay(selectedPhoneNumber) || selectedPhoneNumber}
+                </span>
               </div>
               <button className="new-call-button" onClick={resetCall}>
                 Make Another Call
