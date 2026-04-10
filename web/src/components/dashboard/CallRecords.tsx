@@ -246,7 +246,7 @@ export function CallRecords() {
     };
   }, []);
 
-  const shellProps = {
+  const shellBase = {
     className: 'call-records',
     variant: 'wide' as const,
     eyebrow: 'History',
@@ -256,7 +256,7 @@ export function CallRecords() {
 
   if (isLoading) {
     return (
-      <PageLayout {...shellProps}>
+      <PageLayout {...shellBase}>
         <div className="dashboard-loading">
           <div className="dashboard-loading-spinner" />
           <p>Loading call records…</p>
@@ -267,7 +267,7 @@ export function CallRecords() {
 
   if (error) {
     return (
-      <PageLayout {...shellProps}>
+      <PageLayout {...shellBase}>
         <div className="call-records__message call-records__message--error">
           <p>{error}</p>
         </div>
@@ -275,14 +275,23 @@ export function CallRecords() {
     );
   }
 
-  return (
-    <PageLayout {...shellProps} contentFill>
-      <div className="call-records__layout">
-        <div className="call-records__toolbar">
-          <span className="call-records__toolbar-sub">Newest first</span>
-          <span className="call-records__toolbar-meta">{calls.length} shown</span>
-        </div>
+  const callCountLabel = calls.length === 1 ? '1 call' : `${calls.length} calls`;
 
+  return (
+    <PageLayout
+      {...shellBase}
+      contentFill
+      headerActions={
+        <div className="call-records__header-meta">
+          <span className="call-records__header-meta-count">{callCountLabel}</span>
+          <span className="call-records__header-meta-sep" aria-hidden>
+            ·
+          </span>
+          <span className="call-records__header-meta-sort">Newest first</span>
+        </div>
+      }
+    >
+      <div className="call-records__layout">
         <div className="call-records__scroll">
           {calls.length === 0 ? (
             <div className="call-records__empty">
